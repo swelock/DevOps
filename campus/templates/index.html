@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Аудиторный фонд университета</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header><span>УНИВЕРСИТЕТ / УЧЁТ ПОМЕЩЕНИЙ</span><p>Учебный проект · ЛР1</p></header>
+  <main>
+    <h1>Аудиторный фонд</h1>
+    <p class="intro">Корпуса, подразделения и помещения университета в одном справочнике.</p>
+    <nav aria-label="Справочники">
+      <button type="button" data-resource="rooms" aria-pressed="true">Помещения</button>
+      <button type="button" data-resource="buildings" aria-pressed="false">Корпуса</button>
+      <button type="button" data-resource="departments" aria-pressed="false">Подразделения</button>
+    </nav>
+    <p id="message" role="status" aria-live="polite"></p>
+    <div class="layout">
+      <section class="records" aria-labelledby="list-title">
+        <div class="section-head"><h2 id="list-title">Помещения</h2><span id="count"></span></div>
+        <p id="empty" hidden>Записей пока нет. Добавьте первую запись с помощью формы.</p>
+        <div class="table-wrap"><table><thead id="head"></thead><tbody id="rows"></tbody></table></div>
+      </section>
+      <section class="editor" aria-labelledby="form-title">
+        <h2 id="form-title">Добавить помещение</h2>
+        <p id="hint"></p>
+        <form id="editor">
+          <div id="fields"></div>
+          <button id="save" type="submit">Сохранить</button>
+          <button id="cancel" type="button" class="secondary" hidden>Отменить редактирование</button>
+        </form>
+      </section>
+    </div>
+    <p class="note">Объём рассчитывается как площадь × высота. Номер помещения уникален в пределах корпуса.</p>
+  </main>
+  <footer>Группа 241-353 · Версия 0.1.0 · Локальная учебная версия</footer>
+</body>
+</html>
