@@ -16,7 +16,9 @@ API/БД, веб-интерфейс, тесты и исправления, до�
 Удалённый репозиторий: `https://github.com/swelock/DevOps`.
 Ветка `feature/lr1-campus` опубликована обычным push. Независимый начальный коммит
 удалённой `main` сохранён в истории merge-коммитом `f03f4bf`; force push не применялся.
-Issue, PR и review другого участника пока не завершены.
+Созданы [Issue #2](https://github.com/swelock/DevOps/issues/2) и
+[PR #1](https://github.com/swelock/DevOps/pull/1). Review другого участника и
+слияние пока не выполнены.
 Не выдавайте перенос локальной задачи в Issues за её создание на GitHub до разработки:
 реальная предварительная постановка сохранена в первом локальном коммите.
 
@@ -32,11 +34,10 @@ git branch -vv
 git ls-remote --heads origin feature/lr1-campus
 ```
 
-3. Создайте Issue: заголовок и текст из `docs/issues/LR1-01.md`.
-   Укажите, что до публикации задача велась локально, и ссылку на коммит `00dbed4`.
-4. Откройте PR/MR из `feature/lr1-campus` в `main`, описание — `docs/PR-LR1.md`.
-   Укажите фактическую ссылку на Issue. При необходимости добавьте `Closes #N`
-   с настоящим номером задачи.
+3. Issue создана: `https://github.com/swelock/DevOps/issues/2`. В ней указано,
+   что постановка до публикации сохранена в коммите `00dbed4`.
+4. PR создан из `feature/lr1-campus` в `main`:
+   `https://github.com/swelock/DevOps/pull/1`. В описании указано `Closes #2`.
 5. Другой участник клонирует ветку, выполняет `make setup`, `make verify`,
    проверяет веб-интерфейс и diff; фиксирует результат review в PR.
    Одобрение от имени другого человека автоматически не создавалось.

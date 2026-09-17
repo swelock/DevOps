@@ -16,7 +16,9 @@
 
 Реализация ЛР1 опубликована в ветке `feature/lr1-campus` репозитория
 [`swelock/DevOps`](https://github.com/swelock/DevOps). Ветка подготовлена к PR в
-`main`; Issue, PR и review другого участника оформляются по `docs/GIT-WORKFLOW.md`.
+`main`: [Issue #2](https://github.com/swelock/DevOps/issues/2) и
+[PR #1](https://github.com/swelock/DevOps/pull/1). Для слияния нужен review другого
+участника по `docs/GIT-WORKFLOW.md`.
 
 ## Быстрый запуск
 
