@@ -144,6 +144,8 @@ def create_app(config=None):
             raise APIError("Ресурс не найден.", 404)
         db = get_db()
         if item_id is not None:
+            if not 1 <= item_id <= 9223372036854775807:
+                raise APIError("Запись не найдена.", 404)
             row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()
             if row is None:
                 raise APIError("Запись не найдена.", 404)
