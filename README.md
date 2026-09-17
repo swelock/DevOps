@@ -14,9 +14,9 @@
 
 ## Состояние
 
-Локальная реализация ЛР1 находится в ветке `feature/lr1-campus`.
-Удалённый репозиторий, Issue, PR и review другого участника предстоит оформить
-по `docs/GIT-WORKFLOW.md`; они не заменены локальными документами.
+Реализация ЛР1 опубликована в ветке `feature/lr1-campus` репозитория
+[`swelock/DevOps`](https://github.com/swelock/DevOps). Ветка подготовлена к PR в
+`main`; Issue, PR и review другого участника оформляются по `docs/GIT-WORKFLOW.md`.
 
 ## Быстрый запуск
 
