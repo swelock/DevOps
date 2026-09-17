@@ -149,7 +149,7 @@ def create_app(config=None):
             row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()
             if row is None:
                 raise APIError("Запись не найдена.", 404)
-        if request.method == "GET":
+        if request.method in ("GET", "HEAD"):
             if item_id is not None:
                 return jsonify(serialize(resource, row))
             rows = db.execute(f"SELECT * FROM {resource} ORDER BY id").fetchall()

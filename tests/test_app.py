@@ -206,3 +206,12 @@ def test_health_and_ui(app, client):
     with sqlite3.connect(app.config["DATABASE_PATH"]) as db:
         db.execute("DROP TABLE rooms")
     assert client.get("/health").status_code == 503
+
+
+def test_head_is_read_only(client, room):
+    location = client.post("/api/rooms", json=room).headers["Location"]
+    for url in ("/api/rooms", location):
+        response = client.head(url)
+        assert response.status_code == 200
+        assert response.data == b""
+    assert len(client.get("/api/rooms").json) == 1
