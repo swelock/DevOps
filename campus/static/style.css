@@ -1,0 +1,38 @@
+:root {font-family: system-ui, -apple-system, sans-serif; color: #182b3b; background: #f4f6f8; font-size: 15px;}
+* {box-sizing: border-box;}
+body {margin: 0;}
+header {padding: 20px 5%; background: #183e4b; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 20px;}
+header span {font-size: 12px; font-weight: 700; letter-spacing: .1em;}
+header p {margin: 0; font-size: 13px;}
+main {max-width: 1500px; margin: 42px auto; padding: 0 5%;}
+h1 {font-size: clamp(28px, 4vw, 40px); letter-spacing: -.04em; margin-bottom: 8px;}
+h2 {font-size: 20px; margin: 0;}
+.intro, #hint, .note {color: #566874; line-height: 1.6;}
+nav {display: flex; gap: 8px; flex-wrap: wrap; margin: 30px 0 12px;}
+button {font: inherit; cursor: pointer; padding: 10px 15px; border-radius: 7px; border: 1px solid transparent; background: #126b65; color: white; font-weight: 600;}
+button:hover {filter: brightness(.92);}
+button:focus-visible, input:focus-visible, select:focus-visible {outline: 3px solid #cd8b24; outline-offset: 2px;}
+button:disabled {opacity: .5; cursor: not-allowed;}
+nav button, .secondary {background: white; border-color: #cdd6db; color: #29414f;}
+nav button[aria-pressed="true"] {background: #183e4b; border-color: #183e4b; color: white;}
+.layout {display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 22px; align-items: start;}
+section {background: white; border: 1px solid #dce3e7; border-radius: 10px; padding: 24px;}
+.section-head {display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 22px;}
+#count {font-size: 12px; color: #566874; white-space: nowrap;}
+.table-wrap {overflow-x: auto;}
+table {border-collapse: collapse; width: 100%; min-width: 680px; text-align: left; font-size: 13px;}
+th {font-weight: 600; color: #546875; font-size: 12px; background: #f5f7f8;}
+th, td {padding: 13px 10px; border-bottom: 1px solid #e4e9ec; overflow-wrap: anywhere; min-width: 60px;}
+.actions {min-width: 120px;}
+.actions button {padding: 5px 8px; font-size: 12px; margin: 2px 0;}
+.danger {background: #fff; border-color: #e1b7b3; color: #a33228;}
+label {display: block; font-size: 13px; font-weight: 600; margin: 18px 0;}
+input, select {display: block; width: 100%; font: inherit; margin-top: 7px; padding: 10px; border: 1px solid #b8c6ce; border-radius: 6px; color: #182b3b; background: white;}
+#editor > button {width: 100%; margin-top: 8px;}
+#hint {font-size: 13px;}
+#message {min-height: 24px; line-height: 1.5;}
+.error {color: #a33228;}
+.success {color: #126b65;}
+.note {font-size: 13px; margin-top: 24px;}
+footer {padding: 20px 5%; font-size: 12px; color: #566874;}
+@media (max-width: 950px) {.layout {grid-template-columns: 1fr;} .editor {max-width: 520px;} header {align-items: start; flex-direction: column; gap: 8px;} main {margin-top: 25px;} section {padding: 18px;}}
