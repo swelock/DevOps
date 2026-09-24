@@ -3,6 +3,7 @@ import sqlite3
 import pytest
 
 from campus import create_app
+from campus.database import Database
 
 
 @pytest.fixture
@@ -215,3 +216,20 @@ def test_head_is_read_only(client, room):
         assert response.status_code == 200
         assert response.data == b""
     assert len(client.get("/api/rooms").json) == 1
+
+
+def test_postgresql_adapter_changes_parameter_markers():
+    class FakeConnection:
+        def execute(self, statement, parameters):
+            return statement, parameters
+
+    database = Database(FakeConnection(), "postgresql")
+    assert database.execute("SELECT * FROM rooms WHERE id = ?", (7,)) == (
+        "SELECT * FROM rooms WHERE id = %s",
+        (7,),
+    )
+
+
+def test_unknown_database_engine_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match="DATABASE_ENGINE"):
+        create_app({"DATABASE_ENGINE": "unknown", "DATABASE_PATH": str(tmp_path / "db")})

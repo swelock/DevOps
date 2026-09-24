@@ -2,11 +2,12 @@
 
 import math
 import os
-import sqlite3
 from pathlib import Path
 
 from flask import Flask, g, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
+
+from campus.database import DATABASE_ERRORS, INTEGRITY_ERRORS, connect, initialize_sqlite
 
 ROOT = Path(__file__).resolve().parent.parent
 FIELDS = {
@@ -32,9 +33,7 @@ def get_db():
     if "db" not in g:
         from flask import current_app
 
-        g.db = sqlite3.connect(current_app.config["DATABASE_PATH"], timeout=5)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA foreign_keys = ON")
+        g.db = connect(current_app.config)
     return g.db
 
 
@@ -73,16 +72,23 @@ def serialize(resource, row):
 def create_app(config=None):
     app = Flask(__name__)
     app.config.update(
+        DATABASE_ENGINE=os.environ.get("DATABASE_ENGINE", "sqlite"),
         DATABASE_PATH=os.environ.get("DATABASE_PATH", "instance/campus.sqlite3"),
+        DATABASE_HOST=os.environ.get("DATABASE_HOST", ""),
+        DATABASE_PORT=int(os.environ.get("DATABASE_PORT", "5432")),
+        DATABASE_NAME=os.environ.get("DATABASE_NAME", ""),
+        DATABASE_USER=os.environ.get("DATABASE_USER", ""),
+        DATABASE_PASSWORD=os.environ.get("DATABASE_PASSWORD", ""),
         MAX_CONTENT_LENGTH=16 * 1024,
     )
     if config:
         app.config.update(config)
-    path = Path(app.config["DATABASE_PATH"])
-    if not path.is_absolute():
-        path = ROOT / path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    app.config["DATABASE_PATH"] = str(path)
+    if app.config["DATABASE_ENGINE"] == "sqlite":
+        path = Path(app.config["DATABASE_PATH"])
+        if not path.is_absolute():
+            path = ROOT / path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        app.config["DATABASE_PATH"] = str(path)
 
     @app.teardown_appcontext
     def close_db(_error):
@@ -91,7 +97,7 @@ def create_app(config=None):
             db.close()
 
     with app.app_context():
-        get_db().executescript(Path(__file__).with_name("schema.sql").read_text())
+        initialize_sqlite(get_db(), Path(__file__).with_name("schema.sql"))
 
     @app.errorhandler(APIError)
     def api_error(error):
@@ -111,21 +117,24 @@ def create_app(config=None):
         response.content_type = "application/json"
         return response
 
-    @app.errorhandler(sqlite3.IntegrityError)
     def integrity_error(error):
-        message = str(error)
-        if "UNIQUE constraint" in message:
+        message = str(error).lower()
+        if "unique" in message or "duplicate key" in message:
             text = "Такая запись уже существует: имя или номер помещения в корпусе заняты."
-        elif "FOREIGN KEY constraint" in message:
+        elif "foreign key" in message:
             text = "Связь нарушена: справочник отсутствует или используется помещениями."
         else:
             text = "Данные нарушают ограничения базы данных."
         return jsonify(error=text), 409
 
-    @app.errorhandler(sqlite3.DatabaseError)
     def database_error(error):
         app.logger.error("Database unavailable: %s", error)
         return jsonify(error="База данных недоступна. Повторите запрос позже."), 503
+
+    for error_class in INTEGRITY_ERRORS:
+        app.register_error_handler(error_class, integrity_error)
+    for error_class in DATABASE_ERRORS:
+        app.register_error_handler(error_class, database_error)
 
     @app.get("/")
     def index():
@@ -155,19 +164,21 @@ def create_app(config=None):
             rows = db.execute(f"SELECT * FROM {resource} ORDER BY id").fetchall()
             return jsonify([serialize(resource, row) for row in rows])
         if request.method == "DELETE":
-            with db:
+            with db.transaction():
                 db.execute(f"DELETE FROM {resource} WHERE id = ?", (item_id,))
             return "", 204
         values = validate(resource, request.get_json())
         # Имена таблиц и столбцов взяты из FIELDS, значения всегда параметризованы.
-        with db:
+        with db.transaction():
             if request.method == "POST":
                 fields = ", ".join(values)
                 marks = ", ".join("?" for _ in values)
+                returning = " RETURNING id" if db.engine == "postgresql" else ""
                 cursor = db.execute(
-                    f"INSERT INTO {resource} ({fields}) VALUES ({marks})", tuple(values.values())
+                    f"INSERT INTO {resource} ({fields}) VALUES ({marks}){returning}",
+                    tuple(values.values()),
                 )
-                item_id = cursor.lastrowid
+                item_id = cursor.fetchone()["id"] if returning else cursor.lastrowid
             else:
                 assignments = ", ".join(f"{field} = ?" for field in values)
                 db.execute(
