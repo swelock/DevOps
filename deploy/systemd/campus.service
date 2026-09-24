@@ -1,0 +1,33 @@
+[Unit]
+Description=Campus room inventory web application
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=campusapp
+Group=campusapp
+WorkingDirectory=/opt/campus/app
+EnvironmentFile=/etc/campus/campus.env
+ExecStart=/opt/campus/venv/bin/gunicorn --workers 2 --bind ${APP_HOST}:${APP_PORT} --access-logfile - --error-logfile - --timeout 30 "campus:create_app()"
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=20s
+KillSignal=SIGTERM
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

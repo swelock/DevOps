@@ -13,3 +13,6 @@ instance/
 .DS_Store
 .coverage
 htmlcov/
+deploy/secrets/
+*.key
+*.pem
