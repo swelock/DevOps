@@ -1,10 +1,14 @@
-# Уточните имена интерфейсов командой: ip -br link
+# VMware Fusion NAT: сеть 172.16.114.0/24, DHCP начинается с .128.
 network:
   version: 2
   ethernets:
-    enp0s3:
-      dhcp4: true
-    enp0s8:
+    ens160:
       dhcp4: false
       addresses:
-        - 192.168.56.10/24
+        - 172.16.114.10/24
+      routes:
+        - to: default
+          via: 172.16.114.2
+      nameservers:
+        addresses:
+          - 172.16.114.2

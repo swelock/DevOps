@@ -6,10 +6,16 @@ if [[ ${EUID} -ne 0 ]]; then
   exit 1
 fi
 
-APP_SERVER_IP=${1:-192.168.56.10}
-DB_SERVER_IP=${2:-192.168.56.20}
-ADMIN_CIDR=${3:-192.168.56.0/24}
+APP_SERVER_IP=${1:-172.16.114.10}
+DB_SERVER_IP=${2:-172.16.114.20}
+ADMIN_CIDR=${3:-172.16.114.0/24}
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+SCHEMA_TMP=''
+
+cleanup() {
+  [[ -z ${SCHEMA_TMP} ]] || rm -f "${SCHEMA_TMP}"
+}
+trap cleanup EXIT
 
 if [[ ! ${APP_SERVER_IP} =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] ||
   [[ ! ${DB_SERVER_IP} =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
@@ -44,7 +50,7 @@ printf '\n# BEGIN CAMPUS APP\nhost campus campus_app %s/32 scram-sha-256\n# END 
 
 systemctl restart postgresql
 
-sudo -u postgres psql --dbname=postgres <<SQL
+sudo -u postgres psql --set=ON_ERROR_STOP=on --dbname=postgres <<SQL
 \set app_password '${DB_PASSWORD}'
 SELECT 'CREATE ROLE campus_owner NOLOGIN'
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'campus_owner') \gexec
@@ -57,10 +63,13 @@ REVOKE ALL ON DATABASE campus FROM PUBLIC;
 GRANT CONNECT ON DATABASE campus TO campus_app;
 SQL
 
-sudo -u postgres psql --dbname=campus <<SQL
+SCHEMA_TMP=$(mktemp /tmp/campus-schema.XXXXXX.sql)
+install -m 0644 "${SCRIPT_DIR}/../postgresql/schema.sql" "${SCHEMA_TMP}"
+
+sudo -u postgres psql --set=ON_ERROR_STOP=on --dbname=campus <<SQL
 ALTER SCHEMA public OWNER TO campus_owner;
 SET ROLE campus_owner;
-\i '${SCRIPT_DIR}/../postgresql/schema.sql'
+\i '${SCHEMA_TMP}'
 RESET ROLE;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO campus_app;

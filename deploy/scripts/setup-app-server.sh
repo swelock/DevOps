@@ -6,9 +6,9 @@ if [[ ${EUID} -ne 0 ]]; then
   exit 1
 fi
 
-DB_SERVER_IP=${1:-192.168.56.20}
-CLIENT_CIDR=${2:-192.168.56.0/24}
-ADMIN_CIDR=${3:-192.168.56.0/24}
+DB_SERVER_IP=${1:-172.16.114.20}
+CLIENT_CIDR=${2:-172.16.114.0/24}
+ADMIN_CIDR=${3:-172.16.114.0/24}
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_DIR=$(cd -- "${SCRIPT_DIR}/../.." && pwd)
 

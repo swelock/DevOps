@@ -26,6 +26,13 @@ if ! id "${ADMIN_USER}" >/dev/null 2>&1; then
 fi
 usermod --append --groups sudo "${ADMIN_USER}"
 
+# The account has no reusable password: administrative access is controlled by
+# the installed SSH key, while sudo remains usable for remote maintenance.
+printf '%s ALL=(ALL:ALL) NOPASSWD: ALL\n' "${ADMIN_USER}" \
+  >"/etc/sudoers.d/90-${ADMIN_USER}"
+chmod 0440 "/etc/sudoers.d/90-${ADMIN_USER}"
+visudo -cf "/etc/sudoers.d/90-${ADMIN_USER}" >/dev/null
+
 install -d -m 0700 -o "${ADMIN_USER}" -g "${ADMIN_USER}" "/home/${ADMIN_USER}/.ssh"
 install -m 0600 -o "${ADMIN_USER}" -g "${ADMIN_USER}" \
   "${PUBLIC_KEY_FILE}" "/home/${ADMIN_USER}/.ssh/authorized_keys"
