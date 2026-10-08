@@ -8,7 +8,13 @@ from campus.database import Database
 
 @pytest.fixture
 def app(tmp_path):
-    return create_app({"TESTING": True, "DATABASE_PATH": str(tmp_path / "test.sqlite3")})
+    return create_app(
+        {
+            "TESTING": True,
+            "DATABASE_ENGINE": "sqlite",
+            "DATABASE_PATH": str(tmp_path / "test.sqlite3"),
+        }
+    )
 
 
 @pytest.fixture
@@ -42,6 +48,7 @@ def room(client):
     ],
 )
 def test_crud(client, room, resource, payload, update):
+    """Создание, чтение, изменение и удаление; пересчёт объёма помещения."""
     payload = payload or room
     update = update or dict(room, area=50, height=4, number="102")
     url = f"/api/{resource}"
@@ -62,6 +69,7 @@ def test_crud(client, room, resource, payload, update):
 
 
 def test_unique_number_is_scoped_to_building(client, room):
+    """Номер уникален в одном корпусе, но может повторяться в другом."""
     assert client.post("/api/rooms", json=room).status_code == 201
     assert client.post("/api/rooms", json=room).status_code == 409
     second = client.post("/api/buildings", json={"name": "Второй", "address": "Адрес"}).json
@@ -69,6 +77,7 @@ def test_unique_number_is_scoped_to_building(client, room):
 
 
 def test_update_conflict_rolls_back(client, room):
+    """Неудачная смена номера не должна изменить ни номер, ни площадь."""
     client.post("/api/rooms", json=room)
     second = client.post("/api/rooms", json=dict(room, number="102")).headers["Location"]
     assert client.put(second, json=dict(room, area=100)).status_code == 409
@@ -80,6 +89,7 @@ def test_update_conflict_rolls_back(client, room):
     "resource,key", [("buildings", "building_id"), ("departments", "department_id")]
 )
 def test_restrict_parent_delete(client, room, resource, key):
+    """Справочник удаляется только после удаления его помещений."""
     child = client.post("/api/rooms", json=room).headers["Location"]
     parent = f"/api/{resource}/{room[key]}"
     assert client.delete(parent).status_code == 409
@@ -112,6 +122,7 @@ def test_restrict_parent_delete(client, room, resource, key):
     ],
 )
 def test_invalid_room_does_not_write(client, room, field, value):
+    """Неверное поле отклоняется; помещение не попадает в базу."""
     response = client.post("/api/rooms", json=dict(room, **{field: value}))
     assert response.status_code == 400
     assert response.json["error"]
@@ -120,6 +131,7 @@ def test_invalid_room_does_not_write(client, room, field, value):
 
 @pytest.mark.parametrize("key", ["building_id", "department_id"])
 def test_missing_parent(client, room, key):
+    """Ссылка на отсутствующий справочник запрещена при создании и изменении."""
     assert client.post("/api/rooms", json=dict(room, **{key: 999})).status_code == 409
     created = client.post("/api/rooms", json=room).headers["Location"]
     assert client.put(created, json=dict(room, **{key: 999})).status_code == 409
@@ -130,6 +142,7 @@ def test_missing_parent(client, room, key):
     "payload", [None, [], "text", {}, {"name": "x", "extra": 1}, {"name": " "}, {"name": "x" * 101}]
 )
 def test_invalid_payload(client, payload):
+    """Тело запроса обязано быть объектом с правильным набором полей."""
     # Явное JSON null, а не отсутствие тела.
     import json
 
@@ -140,6 +153,7 @@ def test_invalid_payload(client, payload):
 
 
 def test_http_errors(client):
+    """Проверяем коды ошибок для неверного адреса, метода, формата и размера."""
     assert client.post("/api/departments", data="{").status_code == 415
     assert (
         client.post("/api/departments", data="{", content_type="application/json").status_code
@@ -166,18 +180,22 @@ def test_http_errors(client):
 
 
 def test_names_trimmed_and_unique(client):
+    """Пробелы по краям названия удаляются, дубликаты запрещены."""
     assert client.post("/api/departments", json={"name": " ИТ "}).json["name"] == "ИТ"
     assert client.post("/api/departments", json={"name": "ИТ"}).status_code == 409
 
 
 def test_sql_text_is_data(client):
+    """SQL-команда в названии остаётся текстом и не удаляет таблицу."""
     name = "'); DROP TABLE rooms; --"
     assert client.post("/api/departments", json={"name": name}).json["name"] == name
     assert client.get("/api/rooms").status_code == 200
 
 
 def test_persistence_and_environment(tmp_path, monkeypatch):
+    """Новый экземпляр приложения читает прежние данные по настроенному пути."""
     path = tmp_path / "persistent.sqlite3"
+    monkeypatch.setenv("DATABASE_ENGINE", "sqlite")
     monkeypatch.setenv("DATABASE_PATH", str(path))
     first = create_app().test_client()
     first.post("/api/departments", json={"name": "ИТ"})
@@ -186,6 +204,7 @@ def test_persistence_and_environment(tmp_path, monkeypatch):
 
 
 def test_schema_enforces_rules_without_api(app, client, room):
+    """База отклоняет неверные данные даже при записи без HTTP API."""
     with sqlite3.connect(app.config["DATABASE_PATH"]) as db:
         db.execute("PRAGMA foreign_keys = ON")
         for params in [(1, 1, "1", 0, 3), (999, 1, "1", 20, 3)]:
@@ -198,6 +217,7 @@ def test_schema_enforces_rules_without_api(app, client, room):
 
 
 def test_health_and_ui(app, client):
+    """Файлы интерфейса доступны; /health обнаруживает отсутствие таблицы."""
     assert client.get("/health").json == {"status": "ok", "database": "ok"}
     page = client.get("/")
     assert page.status_code == 200
@@ -210,6 +230,7 @@ def test_health_and_ui(app, client):
 
 
 def test_head_is_read_only(client, room):
+    """HEAD возвращает ответ без тела, не изменяя список помещений."""
     location = client.post("/api/rooms", json=room).headers["Location"]
     for url in ("/api/rooms", location):
         response = client.head(url)
@@ -219,6 +240,8 @@ def test_head_is_read_only(client, room):
 
 
 def test_postgresql_adapter_changes_parameter_markers():
+    """Проверяем замену SQL-плейсхолдеров без настоящего подключения к PostgreSQL."""
+
     class FakeConnection:
         def execute(self, statement, parameters):
             return statement, parameters
@@ -231,5 +254,6 @@ def test_postgresql_adapter_changes_parameter_markers():
 
 
 def test_unknown_database_engine_is_rejected(tmp_path):
+    """Неизвестный тип базы данных вызывает ошибку настройки."""
     with pytest.raises(ValueError, match="DATABASE_ENGINE"):
         create_app({"DATABASE_ENGINE": "unknown", "DATABASE_PATH": str(tmp_path / "db")})
