@@ -55,6 +55,16 @@ python3 -m venv /opt/campus/venv
 chown -R root:campusapp /opt/campus/venv
 find /opt/campus/venv -type d -exec chmod 0750 {} +
 
+# Сохраняем ключ между переустановками, чтобы не сбрасывать сессии без причины.
+SESSION_SECRET=$(/opt/campus/venv/bin/python - <<'PYKEY'
+from pathlib import Path
+import secrets
+from dotenv import dotenv_values
+path = Path("/etc/campus/campus.env")
+old = dotenv_values(path).get("SECRET_KEY", "") if path.exists() else ""
+print(old if len(old) >= 32 and not old.startswith("<") else secrets.token_hex(32))
+PYKEY
+)
 umask 0027
 {
   echo 'APP_HOST=0.0.0.0'
@@ -65,6 +75,8 @@ umask 0027
   echo 'DATABASE_NAME=campus'
   echo 'DATABASE_USER=campus_app'
   echo "DATABASE_PASSWORD=${DB_PASSWORD}"
+  echo "SECRET_KEY=${SESSION_SECRET}"
+  echo 'SESSION_COOKIE_SECURE=false'
 } >/etc/campus/campus.env
 chown root:campusapp /etc/campus/campus.env
 chmod 0640 /etc/campus/campus.env

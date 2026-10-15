@@ -20,3 +20,9 @@ CREATE TABLE IF NOT EXISTS rooms (
     height REAL NOT NULL CHECK(height > 0 AND height <= 100),
     UNIQUE(building_id, number)
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE CHECK(length(trim(username)) BETWEEN 1 AND 100),
+    password_hash TEXT NOT NULL
+);
