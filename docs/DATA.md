@@ -8,6 +8,11 @@
 erDiagram
     buildings ||--o{ rooms : contains
     departments ||--o{ rooms : responsible_for
+    users {
+        INTEGER id PK
+        TEXT username UK
+        TEXT password_hash
+    }
     buildings {
         INTEGER id PK
         TEXT name UK
@@ -45,3 +50,16 @@ erDiagram
 
 Каждое изменение — отдельная транзакция. При ошибке `db.transaction()` откатывает запись.
 Файл БД исключён из Git; тесты используют отдельные временные файлы.
+
+## Учётные записи
+
+Четвёртая таблица `users`: ID, уникальный `username` (1–100 символов),
+`password_hash`. Пароль в открытом виде не хранится. Хеш PBKDF2-SHA256 включает
+случайную соль и число итераций; сравнение выполняет Werkzeug.
+Пользователь создаётся CLI-командой; таблица не доступна через CRUD API.
+Связанные предметные сущности по-прежнему — корпуса, подразделения и помещения.
+
+Для существующей SQLite `CREATE TABLE IF NOT EXISTS users` выполняется при
+старте без удаления прежних таблиц. Для PostgreSQL администратор должен применить
+обновлённый `deploy/postgresql/schema.sql` от имени владельца и выдать права;
+порядок обновления приведён в `deploy/README.md`.
