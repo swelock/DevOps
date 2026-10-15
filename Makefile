@@ -1,14 +1,16 @@
 PYTHON ?= python3
 VENV = .venv/bin/python
 
-.PHONY: setup run test quality format deploy-check verify
+.PHONY: setup run test test-raw quality format deploy-check verify
 setup:
 	$(PYTHON) -m venv .venv
 	$(VENV) -m pip install -r requirements-dev.txt
 run:
 	$(VENV) run.py
 test:
-	$(VENV) -m pytest -q
+	$(VENV) -m pytest -q --explain
+test-raw:
+	$(VENV) -m pytest -v
 quality:
 	$(VENV) -m ruff check .
 	$(VENV) -m ruff format --check .

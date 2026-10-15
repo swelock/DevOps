@@ -1,0 +1,688 @@
+КОМАНДЫ И ПОРЯДОК ПРОВЕРКИ ЛР1 И ЛР2
+====================================
+
+Команды выполняются по пунктам, а не одним большим скриптом.
+Запись «Ожидается» описывает критерий проверки, а не уже полученный результат.
+Если результат отличается, остановиться и разобраться в причине.
+Пароли, приватные ключи и содержимое рабочей .env на экран не выводить.
+
+МЕСТА ВЫПОЛНЕНИЯ
+----------------
+ЛР1: GitHub Desktop + сайт GitHub + VS Code; терминал только для проверок.
+Открытая папка VS Code: Project_DevOps, не родительская DevOps.
+ЛР2: консоли VMware Campus App и Campus DB; отдельная проверка с Mac.
+
+Проект на Mac:
+/Users/swelock/Desktop/учеба/3курс/DevOps/Project_DevOps
+
+Campus App: campus-app, 172.16.114.10
+Campus DB:  campus-db,  172.16.114.20
+Сайт: http://172.16.114.10:8000
+Порт 5432 — PostgreSQL, не веб-сайт; в браузере его не открывать.
+
+
+ЛР1. ПОДРОБНО ЧЕРЕЗ GITHUB DESKTOP
+=================================
+
+Это основной вариант инструкции ЛР1. Ниже сохранён вариант с Git-командами
+как справочник; повторно выполнять его после действий в Desktop не нужно.
+Сейчас инструкция описывает будущие действия, а не выполненный GitFlow.
+
+А. КАКИЕ ОКНА НУЖНЫ И ЧТО ОЗНАЧАЮТ КНОПКИ
+----------------------------------------
+GitHub Desktop — ветки, просмотр изменений, коммиты, отправка и получение кода.
+VS Code — изменение файлов, запуск тестов, просмотр сайта.
+Сайт github.com — Issue, PR, review, слияние и публикация выпуска.
+
+Current Repository — выбранный репозиторий.
+Current Branch — текущая ветка; всегда проверять перед коммитом.
+Changes — изменения файлов, которые ещё не вошли в коммит.
+History — уже созданные коммиты и их содержимое.
+Commit — сохранить выбранные изменения в локальную историю.
+Publish branch — впервые отправить ветку на GitHub.
+Push origin — отправить новые локальные коммиты.
+Fetch origin — узнать, что изменилось на GitHub; не равно получить изменения.
+Pull origin — получить новые коммиты текущей ветки на компьютер.
+PR — предложение объединить ветки; push сам по себе не является PR/слиянием.
+
+Б. ВЫБРАТЬ ИМЕННО НАШУ ПАПКУ
+---------------------------
+1. Запустить GitHub Desktop.
+2. Слева сверху нажать Current Repository и выбрать DevOps.
+3. В меню Repository нажать Show in Finder.
+4. Проверить, что открылась именно папка:
+   /Users/swelock/Desktop/учеба/3курс/DevOps/Project_DevOps
+   Если открылась другая копия — не коммитить и не удалять её.
+5. Чтобы добавить нужную копию: File -> Add Local Repository -> Choose,
+   выбрать Project_DevOps -> Add Repository. Это не клонирование заново.
+6. Через Repository -> View on GitHub проверить адрес swelock/DevOps.
+7. Открыть Project_DevOps в VS Code. Если кнопка Open in Visual Studio Code
+   недоступна, в VS Code выбрать File -> Open Folder и нужную папку.
+
+В. СНАЧАЛА РАЗОБРАТЬ ТЕКУЩИЕ ИЗМЕНЕНИЯ
+--------------------------------------
+На момент подготовки есть несохранённые в Git изменения. Это НЕ ошибка.
+В Desktop открыть Changes, нажимать каждый файл и читать diff справа.
+Красное — удалённые строки, зелёное — добавленные.
+Не выбирать Discard Changes: команда удаляет незакоммиченные изменения.
+Не включать в демонстрационный коммит посторонние файлы.
+
+В VS Code у вкладок README/VERIFICATION могут быть несохранённые старые версии.
+При предупреждении о более новом файле нажать Compare, сравнить обе стороны,
+сохранить нужный итог. Не нажимать Overwrite без сравнения.
+
+Текущие тесты, документация и настройки — отдельная подготовительная работа.
+Их нужно принять отдельной задачей и PR, а не выдавать за маленькое изменение,
+сделанное на защите. Перед обычным переключением веток Changes должен быть пуст.
+Если Desktop предлагает перенос незакоммиченных изменений, не выбирать наугад.
+Bring my changes to ... переносит работу в новую ветку;
+Leave my changes on ... оставляет её на исходной ветке (через сохранение Desktop).
+Нужно заранее знать, какой задаче принадлежат эти изменения.
+
+Г. ПОДГОТОВИТЬ DEVELOP (ОДИН РАЗ)
+--------------------------------
+После разбора/сохранения текущей работы и при пустом Changes:
+1. Current Branch -> main.
+2. Fetch origin. Если появилась Pull origin — нажать и дождаться получения.
+3. Current Branch -> найти develop.
+4. Если develop уже существует, выбрать её, Fetch origin -> Pull origin,
+   если предложено. Повторно создавать не нужно.
+5. Если develop нет: Current Branch -> New Branch.
+6. Name: develop. Основа/Start from: main, не случайная feature-ветка.
+7. Нажать Create Branch, затем Publish branch.
+8. Проверить, что сверху Current Branch = develop.
+
+Отдельной подготовительной задачей обновить CONTRIBUTING.md под GitFlow:
+feature от develop, PR функции в develop, release в main и обратно в develop.
+Само создание develop не меняет правила и не доказывает полный GitFlow.
+
+Д. СОЗДАТЬ НОВУЮ ISSUE — ЗАДАЧУ
+-------------------------------
+1. Desktop: Repository -> View on GitHub.
+2. В браузере: Issues -> New issue.
+3. Заголовок: «Пояснение единиц измерения в форме помещения».
+4. Текст: «Добавить пояснение: площадь в м², высота в метрах.
+   Критерии: пояснение видно в форме помещения; создание/редактирование
+   работают; make verify завершается успешно».
+5. Нажать Create/Submit new issue.
+6. Записать выданный номер. В дальнейшем 123 означает ПРИМЕР номера.
+7. Если это пояснение уже есть, выбрать другое полезное маленькое изменение.
+
+Е. СОЗДАТЬ FEATURE-ВЕТКУ
+-----------------------
+1. Desktop: Current Branch -> develop.
+2. Fetch origin -> Pull origin, если есть новые коммиты.
+3. Current Branch -> New Branch.
+4. Name: feature/123-room-units (123 заменить реальным номером Issue).
+5. Основа/Start from: develop.
+6. Create Branch. Проверить имя сверху.
+
+Ж. ВНЕСТИ ИЗМЕНЕНИЕ И ПРОВЕРИТЬ
+------------------------------
+1. VS Code: открыть нужный файл в Project_DevOps.
+2. Для статического пояснения — campus/templates/index.html.
+   Для динамических полей формы — campus/static/app.js.
+3. Внести небольшой осмысленный текст, сохранить Cmd+S.
+4. Вернуться в Desktop: файл появился во вкладке Changes.
+5. Нажать файл, прочитать diff: изменилось только то, что планировали.
+6. В VS Code: меню Terminal -> New Terminal. Проверить каталог:
+
+pwd
+
+Должен быть Project_DevOps. Если нет:
+
+cd "/Users/swelock/Desktop/учеба/3курс/DevOps/Project_DevOps"
+
+Выполнить:
+
+make verify
+
+Ожидается успешное завершение без ошибок. PASSED — ожидаемое поведение,
+в том числе правильный отказ на некорректном вводе.
+Для проверки внешнего вида открыть ещё один терминал и выполнить make run.
+Если порт занят, использовать свободный, например APP_PORT=8012 make run,
+и открыть http://127.0.0.1:8012. Проверить подсказку и операции в форме.
+Кнопка запуска Python-файла не заменяет запуск pytest/make verify.
+
+З. СОЗДАТЬ КОММИТЫ В DESKTOP
+---------------------------
+1. Desktop -> Changes. Включить галочки ТОЛЬКО у файлов этой задачи.
+2. Остальные файлы не удалять, просто не включать в этот коммит.
+3. Поле Summary снизу слева: feat: clarify room measurement units
+4. Description: кратко описать, что и зачем изменилось (не обязательно).
+5. Нажать Commit to feature/123-room-units.
+6. В History найти новый коммит и проверить его diff.
+7. Для отдельного осмысленного коммита реально добавить проверку подсказки
+   в tests/test_app.py, выполнить make verify, выбрать этот файл и написать
+   Summary: test: check room measurement hint. Нажать Commit to ... .
+8. Несколько коммитов должны отражать реальную работу, не пустые действия.
+
+И. ОТПРАВИТЬ ВЕТКУ И ОТКРЫТЬ PR
+------------------------------
+1. Нажать Publish branch, если ветка ещё не отправлялась.
+   Если уже опубликована — Push origin.
+2. После отправки нажать Preview Pull Request, затем Create Pull Request.
+   Если кнопки нет: Branch -> Create Pull Request или на сайте
+   Pull requests -> New pull request.
+3. В браузере проверить стрелку:
+   base: develop <- compare: feature/123-room-units.
+   base — КУДА вливаем; compare — ОТКУДА берём изменения.
+   Если по умолчанию выбран main, сменить на develop.
+4. Заголовок: «Пояснение единиц измерения помещений».
+5. Описание: цель, «Связано с #123», фактически выполненные проверки.
+6. В Files changed проверить отсутствие лишних файлов и секретов.
+7. Нажать Create pull request. Отправить ссылку второму участнику команды.
+
+К. REVIEW И СЛИЯНИЕ
+------------------
+Другой участник под своим GitHub-аккаунтом:
+1. Открывает PR -> Files changed, читает изменения.
+2. В своей копии проверяет ветку и выполняет make verify; проверяет интерфейс.
+3. Нажимает Review changes -> Approve -> Submit review, если всё верно,
+   либо Request changes с конкретными замечаниями.
+Автор не выдаёт свою самопроверку за review другого участника.
+Для приватного репозитория доступ выдаётся через Settings -> Collaborators
+уполномоченным владельцем; не публиковать пароли для совместного доступа.
+
+Если есть замечания: исправить в ТОЙ ЖЕ feature-ветке, проверить,
+Commit -> Push origin. PR обновится автоматически; новый PR не нужен.
+После одобрения выбрать Merge pull request -> Create a merge commit
+(через стрелку рядом с кнопкой, если выбран другой способ) -> Confirm merge.
+Если слияние заблокировано правилами или конфликтом, не обходить ограничение.
+После слияния закрыть Issue со ссылкой на PR, если она не закрылась сама:
+автозакрытие задач обычно связано со слиянием в default branch, а не develop.
+
+Desktop: Current Branch -> develop -> Fetch origin -> Pull origin.
+В History проверить появление принятого изменения. Выполнить make verify.
+
+Л. RELEASE-ВЕТКА И ПРИНЯТИЕ В MAIN
+---------------------------------
+Версия 0.2.1 ниже — пример. Выбрать свободный новый номер по существующим тегам.
+В браузере Code -> Tags проверить теги. Не перемещать v0.1.0.
+1. Desktop: текущая актуальная develop, Changes пуст.
+2. Current Branch -> New Branch -> release/0.2.1, основа develop -> Create Branch.
+3. VS Code: обновить номер выпуска в интерфейсе и нужной документации.
+4. make verify. Новые функции на этом этапе не добавлять.
+5. Desktop: выбрать только файлы выпуска, Summary: chore: prepare version 0.2.1.
+6. Commit to release/0.2.1 -> Publish branch (или Push origin).
+7. Создать PR как выше, но base: main <- compare: release/0.2.1.
+8. Второй участник выполняет review, затем Merge pull request -> Confirm merge.
+9. Release-ветку пока не удалять: она нужна для возврата изменений в develop.
+10. Desktop: Current Branch -> main -> Fetch origin -> Pull origin.
+11. Выполнить make verify на полученной main.
+
+М. СОЗДАТЬ ТЕГ И ВЫПУСК ЧЕРЕЗ САЙТ
+---------------------------------
+Это вариант без Git-команд для тега; ниже в справочнике есть альтернативный.
+1. Desktop: Repository -> View on GitHub.
+2. В браузере открыть Releases -> Draft a new release.
+   Если ссылки не видно, открыть https://github.com/swelock/DevOps/releases .
+3. Choose a tag/Select tag -> ввести v0.2.1 -> Create new tag on publish.
+4. Target: main. Проверить, что это принятый итоговый коммит, а не feature.
+   Если main успела измениться, выбрать конкретный проверенный коммит выпуска.
+5. Release title: «Версия 0.2.1».
+6. Описание: фактические изменения и результаты проверки.
+7. Publish release. Сохранение черновика НЕ публикует выпуск.
+8. Проверить на странице Releases/Tags, что тег есть и указывает на нужный код.
+9. Desktop: Fetch origin, в History проверить метку версии у нужного коммита.
+
+Release — страница с описанием поставки, tag — указатель на коммит.
+Создание страницы выпуска на GitHub может одновременно создать выбранный тег.
+Этот вариант создаёт тег средствами GitHub; если нужен именно аннотированный
+локальный Git-тег, использовать git tag -a и git push из справочника вместо него.
+Не выполнять оба способа с одним именем повторно.
+
+Н. ВЕРНУТЬ RELEASE В DEVELOP
+---------------------------
+1. На сайте Pull requests -> New pull request.
+2. base: develop <- compare: release/0.2.1.
+3. Создать PR, выполнить review и слияние, как раньше.
+4. Если изменений нет, проверить, что develop уже содержит итоговые изменения;
+   не создавать фиктивный коммит ради пустого PR.
+5. Desktop: develop -> Fetch origin -> Pull origin -> make verify.
+6. После завершения можно удалить временные feature/release-ветки;
+   main, develop и выпущенные теги сохраняются.
+
+О. ЧТО ОТКРЫТЬ ПО ПУНКТАМ ЛР1
+----------------------------
+Путь изменения: Issue -> PR функции -> review -> PR выпуска -> Release/Tag.
+Desktop: History -> выбрать коммит -> прочитать diff и сообщение.
+Правила: CONTRIBUTING.md, объяснить develop/feature/release/main.
+Небольшое изменение: повторить пункты Д-К для новой реальной задачи.
+Секреты: Desktop Changes и diff, .gitignore и команды проверки из пункта 7 ниже.
+Для секретов короткая проверка терминалом точнее, чем просто отсутствие файла
+в Changes: игнорируемый файл может уже оказаться отслеживаемым в истории.
+
+П. ЧАСТЫЕ ПРОБЛЕМЫ
+-----------------
+Publish branch вместо Push origin — нормальное первое опубликование ветки.
+Fetch origin выполнен, но файлов нет — проверить, предлагается ли Pull origin.
+PR показывает лишнее — проверить base/compare и состав собственных коммитов.
+Нечего коммитить — сохранить файл в VS Code и проверить выбранную папку Desktop.
+Есть конфликт — не выбирать вслепую одну сторону; читать обе версии,
+исправлять в редакторе и повторять проверки. Для старого конфликта ниже указан
+реальный исторический коммит; его не выдавать за новый конфликт на защите.
+Нельзя Approve собственный PR — review выполняет другой участник.
+Не нажимать Force push, Discard all changes или Delete tag ради удобства.
+
+Источники названий действий и поведения Desktop:
+https://docs.github.com/en/desktop/making-changes-in-a-branch/managing-branches-in-github-desktop
+https://docs.github.com/en/desktop/making-changes-in-a-branch/committing-and-reviewing-changes-to-your-project-in-github-desktop
+https://docs.github.com/en/desktop/working-with-your-remote-repository-on-github-or-github-enterprise/creating-an-issue-or-pull-request-from-github-desktop
+Создание выпуска:
+https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+
+
+ЛР1. СПРАВОЧНИК GIT-КОМАНД (АЛЬТЕРНАТИВА DESKTOP)
+=============================
+
+0. ПРЕДВАРИТЕЛЬНАЯ ПОДГОТОВКА
+----------------------------
+На Mac:
+
+cd "/Users/swelock/Desktop/учеба/3курс/DevOps/Project_DevOps"
+git status --short
+git branch -a
+git tag -n
+git ls-remote --tags origin
+
+На момент составления инструкции в проекте есть незакоммиченные изменения;
+develop и release-ветки ещё не созданы. Старый процесс нужно привести к GitFlow.
+Не переключать ветки и не делать pull поверх несохранённой работы.
+Не применять git reset --hard, force push или массовое git add .
+Сначала согласовать состав текущих изменений и сохранить их отдельной работой.
+Проверить Compare для несохранённых вкладок VS Code; не выбирать Overwrite вслепую.
+
+Правила в CONTRIBUTING.md нужно обновить: feature создаётся от develop,
+PR функции направляется в develop; выпуск проходит через release в main.
+Старые Issue и PR не заменяют новый процесс: создать настоящую новую задачу.
+Удалённое обсуждение нельзя воспроизвести выдуманным review.
+
+Для GitFlow используется следующая схема:
+Issue -> feature/* -> PR в develop -> release/* -> PR в main -> тег
+                                              -> обратно в develop
+
+main — выпущенные версии.
+develop — изменения для следующего выпуска.
+feature/* — работа над отдельной задачей.
+release/* — подготовка и проверка выпуска.
+hotfix/* — срочное исправление выпущенной версии; в этом сценарии не требуется.
+
+После сохранения текущей работы и при чистом git status:
+
+git switch main
+git pull --ff-only origin main
+
+Если develop ещё не существует ни локально, ни на origin:
+
+git switch -c develop
+git push -u origin develop
+
+Если develop уже создана — не создавать повторно:
+
+git switch develop
+git pull --ff-only origin develop
+
+1. СОЗДАТЬ ЗАДАЧУ
+-----------------
+На GitHub: swelock/DevOps -> Issues -> New issue.
+
+Пример: «Пояснение единиц измерения в форме помещения».
+Цель: добавить понятную подсказку про м² и метры.
+Критерии: подсказка видна, объём рассчитывается, CRUD работает,
+make verify проходит. Если подсказка уже существует, выбрать другое небольшое
+реальное улучшение; не создавать пустую задачу ради демонстрации.
+
+Записать реальный номер Issue. Ниже 123 — пример; заменить на свой номер.
+
+2. СОЗДАТЬ ВЕТКУ И ВНЕСТИ ИЗМЕНЕНИЕ
+----------------------------------
+На Mac, из чистой актуальной develop:
+
+git switch develop
+git pull --ff-only origin develop
+git switch -c feature/123-room-units
+
+В VS Code изменить нужный файл интерфейса, сохранить и проверить diff.
+Например, изменение подписи можно сделать в campus/templates/index.html.
+Если требуется изменение динамической формы, проверить campus/static/app.js.
+
+git diff
+make verify
+
+Проверить результат в браузере. Для локального запуска в отдельном терминале:
+
+make run
+
+Адрес по умолчанию: http://127.0.0.1:8000
+Если порт занят, выбрать свободный, например:
+
+APP_PORT=8012 make run
+
+Тогда открыть http://127.0.0.1:8012. Завершение локального сервера — Ctrl+C.
+Не останавливать неизвестный процесс только ради освобождения порта.
+
+Добавить только действительно изменённые файлы. Для изменения HTML:
+
+git add campus/templates/index.html
+git diff --cached
+git commit -m "feat: clarify room measurement units"
+
+При необходимости отдельным осмысленным коммитом добавить проверку изменения
+или обновить документацию. Не дробить пустое изменение искусственно.
+Для коммита теста сначала реально добавить проверку, затем:
+
+make verify
+git add tests/test_app.py
+git diff --cached
+git commit -m "test: check room measurement hint"
+
+Отправить ветку (номер 123 заменить тем же реальным номером):
+
+git push -u origin feature/123-room-units
+
+3. PR И REVIEW
+--------------
+На GitHub создать Pull Request:
+base: develop
+compare: feature/123-room-units
+
+Указать цель, связь с Issue #123, команды проверки и фактические результаты.
+Другой участник команды читает diff, проверяет работу и оставляет review.
+Если есть замечания — исправить, выполнить make verify и отправить новые коммиты.
+После одобрения слить PR через Create a merge commit.
+Убедиться, что задача закрыта; если закрытие не произошло автоматически,
+закрыть её после проверки, сославшись на принятый PR.
+
+На Mac после слияния:
+
+git switch develop
+git pull --ff-only origin develop
+make verify
+
+4. RELEASE И ТЕГ
+----------------
+Ниже 0.2.1 — пример нового номера, не обязательное значение.
+Проверить локальные и удалённые теги, выбрать свободную следующую версию.
+Существующий v0.1.0 не удалять и не перемещать.
+
+git tag -n
+git ls-remote --tags origin
+git switch -c release/0.2.1
+
+На release-ветке обновить фактический номер версии в интерфейсе и документации.
+Не добавлять новые большие функции на этапе выпуска.
+
+make verify
+git diff
+git add campus/templates/index.html
+git diff --cached
+git commit -m "chore: prepare version 0.2.1"
+git push -u origin release/0.2.1
+
+Если менялись другие файлы версии, добавить их явно перед коммитом.
+На GitHub: PR release/0.2.1 -> main, review, слияние через merge-коммит.
+После слияния, в чистом рабочем дереве на Mac:
+
+git switch main
+git pull --ff-only origin main
+make verify
+git tag -a v0.2.1 -m "Release 0.2.1"
+git push origin v0.2.1
+
+На GitHub создать и проверить PR release/0.2.1 -> develop,
+чтобы изменения подготовки выпуска попали обратно в разработку.
+Если различий нет, проверить, что develop уже содержит итоговый код выпуска;
+не создавать фиктивный коммит только для пустого PR.
+
+git switch develop
+git pull --ff-only origin develop
+make verify
+
+Выпущенный тег должен указывать на принятый коммит main, а не на случайный
+коммит feature-ветки. Слияние не обходится локальной командой вместо review.
+
+5. ПОКАЗАТЬ ПУТЬ ИЗМЕНЕНИЯ
+-------------------------
+Открыть на GitHub: Issue -> PR функции -> review -> PR выпуска -> тег.
+На Mac:
+
+git log --graph --oneline --decorate --all -30
+git show --no-patch v0.2.1
+git show --no-patch v0.1.0
+git show --stat 1b28c21
+
+Первые команды показывают новую цепочку и версии (номер заменить своим).
+Последняя показывает старый коммит разрешения конфликта;
+это отдельный исторический эпизод, не новое действие GitFlow.
+
+Объяснение: задача фиксирует требование, ветка изолирует изменение,
+PR и review проверяют его, release готовит выпуск, тег фиксирует версию.
+
+6. ОБЪЯСНИТЬ ПРАВИЛА
+--------------------
+Открыть CONTRIBUTING.md после актуализации под GitFlow.
+Назвать правила: задача, отдельная ветка, проверки, review другого участника,
+нет секретов, нет force push общей ветки, выпущенные теги не перемещаются.
+
+make test       — автоматические проверки поведения приложения.
+make test-raw   — стандартный подробный вывод pytest.
+make quality    — статический анализ и проверка форматирования.
+make format     — форматирование (изменяет файлы, затем повторить проверки).
+make verify     — полный набор локальных проверок.
+
+Эти строки с пояснениями не копировать как shell-команды.
+Выполняемая команда для итоговой проверки:
+
+make verify
+
+7. ПОКАЗАТЬ ИСКЛЮЧЕНИЕ СЕКРЕТОВ И ЛОКАЛЬНЫХ ФАЙЛОВ
+-------------------------------------------------
+На Mac, из корня проекта:
+
+git check-ignore -v .env .env.local instance/campus.sqlite3 .venv/bin/python
+git ls-files -- .env '.env.*' '*.sqlite*' '*.db' '.venv/*'
+git status --short
+git diff --cached
+
+Ожидается: правила игнорирования локальных файлов; среди перечисленных
+отслеживаемых файлов допустима .env.example без настоящих секретов.
+Не должно быть рабочей .env, файла базы, окружения или приватного ключа.
+.gitignore не защищает файл, который ранее уже попал в Git.
+Если настоящий секрет опубликован, его необходимо отозвать/заменить.
+
+
+ЛР2. ДВЕ LINUX-МАШИНЫ
+=====================
+
+0. ПРОВЕРИТЬ ИСХОДНОЕ СОСТОЯНИЕ
+------------------------------
+Обе VM должны быть включены. Сначала убедиться, на какой машине консоль:
+
+hostname
+ip -br address
+
+На Campus DB:
+
+systemctl is-enabled postgresql
+systemctl is-active postgresql
+pg_lsclusters
+
+На Campus App:
+
+systemctl is-enabled campus
+systemctl is-active campus
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: enabled, active, кластер online, HTTP 200 и database/status ok.
+Если исходное состояние неисправно, исправить его до аварийных сценариев.
+
+1. ПЕРЕЗАГРУЗИТЬ ОБЕ МАШИНЫ И ПРОВЕРИТЬ АВТОЗАПУСК
+-------------------------------------------------
+Campus DB:
+
+sudo reboot
+
+Дождаться загрузки, войти в консоль. Если использовался SSH, подключиться заново.
+
+hostname
+systemctl is-enabled postgresql
+systemctl is-active postgresql
+pg_lsclusters
+
+Ожидается: campus-db, enabled, active, online.
+Только после готовности БД перезагрузить Campus App:
+
+sudo reboot
+
+После загрузки и входа на Campus App:
+
+hostname
+systemctl is-enabled campus
+systemctl is-active campus
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: campus-app, enabled, active, HTTP 200.
+В браузере Mac открыть http://172.16.114.10:8000 и проверить сохранённые записи.
+Не запускать Python вручную: в этом пункте проверяется автозапуск systemd.
+
+2. ОСТАНОВИТЬ БД И ПРОДИАГНОСТИРОВАТЬ ПРИЛОЖЕНИЕ
+-----------------------------------------------
+Campus DB:
+
+sudo systemctl stop postgresql
+pg_lsclusters
+
+Ожидается: кластер down.
+Campus App:
+
+curl -i --max-time 15 http://127.0.0.1:8000/health
+systemctl status campus --no-pager
+sudo journalctl -u campus -n 30 --no-pager
+
+Ожидается: HTTP 503, ошибка доступа к БД в журнале.
+campus может оставаться active: процесс жив, но зависимость недоступна.
+HTTP 503 нельзя путать с полным отсутствием HTTP-соединения.
+
+Восстановление, Campus DB:
+
+sudo systemctl start postgresql
+pg_lsclusters
+
+Campus App:
+
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: online и HTTP 200 без ручного перезапуска приложения.
+
+3. НАЙТИ ПРОЦЕСС, ПОРТ И ЖУРНАЛЫ
+-------------------------------
+Campus App:
+
+systemctl show campus -p MainPID -p User -p Restart
+ps -ef | grep '[g]unicorn'
+sudo ss -lntp '( sport = :8000 )'
+sudo journalctl -u campus -n 20 --no-pager
+
+Показать: MainPID, User=campusapp, Restart=on-failure,
+процессы Gunicorn, слушающий порт 8000 и записи запросов в журнале.
+Выход из постраничного просмотра systemctl/journalctl, если он открылся: q.
+
+Campus DB:
+
+pg_lsclusters
+sudo ss -lntp '( sport = :5432 )'
+sudo systemctl status postgresql --no-pager
+
+postgresql.service — общий unit; его active само по себе не доказывает,
+что конкретный кластер принимает подключения. Поэтому нужен pg_lsclusters.
+
+4. ИЗМЕНИТЬ ПАРАМЕТР СЛУЖБЫ И ВОССТАНОВИТЬ
+-----------------------------------------
+Campus App. До изменения записать исходное RestartUSec:
+
+systemctl cat campus
+systemctl show campus -p RestartUSec
+sudo test ! -e /etc/systemd/system/campus.service.d/defense-demo.conf
+
+Последняя команда должна завершиться успешно (код 0).
+Если файл уже существует, не перезаписывать и не удалять его:
+сначала выяснить назначение или выбрать другое уникальное имя для демо.
+В базовом unit проекта RestartSec=3s; реальные переопределения могут отличаться.
+
+sudo systemctl edit --drop-in=defense-demo.conf campus
+
+В редакторе вписать в разрешённую область перед служебной границей:
+
+[Service]
+RestartSec=10s
+
+Сохранить и выйти. Если открылся nano: Ctrl+O, Enter, Ctrl+X.
+Если открылся vi/vim: i для ввода, затем Esc и :wq с Enter.
+
+sudo systemctl daemon-reload
+sudo systemctl restart campus
+systemctl show campus -p RestartUSec
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: RestartUSec=10s и HTTP 200.
+
+Восстановление — удалить ТОЛЬКО созданный нами временный файл:
+
+sudo rm /etc/systemd/system/campus.service.d/defense-demo.conf
+sudo systemctl daemon-reload
+sudo systemctl restart campus
+systemctl show campus -p RestartUSec
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: исходное записанное значение RestartUSec, HTTP 200.
+Не применять systemctl revert: он может удалить другие переопределения.
+
+5. ПРОВЕРИТЬ НЕДОСТУПНОСТЬ БД С ПОСТОРОННЕГО УЗЛА
+-----------------------------------------------
+БД должна быть запущена, кластер online.
+Campus App — разрешённый узел:
+
+nc -vz -w 3 172.16.114.20 5432
+
+Ожидается: successful/succeeded, TCP-соединение устанавливается.
+
+Mac — третий узел, НЕ Campus App и НЕ сама Campus DB:
+
+nc -vz -G 3 172.16.114.20 5432
+
+Ожидается: timeout или отказ, соединение не устанавливается.
+Mac использует -G для ограничения времени соединения; Linux — -w.
+Если проверка с Campus App тоже не проходит, это ещё не доказательство изоляции:
+проверить БД, сеть и firewall. Если с Mac проходит — изоляция не выполнена.
+
+Campus DB — показать правила и конфигурацию:
+
+sudo ufw status numbered
+sudo -u postgres psql -Atc 'show listen_addresses; show hba_file;'
+sudo grep -n 'campus_app' /etc/postgresql/*/main/pg_hba.conf
+
+Ожидается: UFW активен; 5432 разрешён от 172.16.114.10,
+нет общего разрешения 5432 для любых адресов/всей клиентской сети.
+pg_hba ограничивает подключение роли приложения адресом сервера приложения.
+Положительный контроль с Campus App и отрицательный с Mac выполняются подряд,
+при одинаковом работающем состоянии БД.
+
+6. ИТОГОВОЕ ВОССТАНОВЛЕНИЕ
+-------------------------
+Campus DB:
+
+systemctl is-active postgresql
+pg_lsclusters
+
+Campus App:
+
+systemctl is-active campus
+systemctl show campus -p RestartUSec
+curl -i --max-time 15 http://127.0.0.1:8000/health
+
+Ожидается: БД online, приложение active, исходный параметр, HTTP 200.
+В браузере проверить сайт. Не оставлять БД остановленной после демонстрации.
+
+Документы проекта: README.md, CONTRIBUTING.md, docs/TZ.md,
+docs/API.md, docs/DATA.md, docs/OPERATIONS.md, deploy/README.md.
