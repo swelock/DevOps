@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход — Аудиторный фонд</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Вход в систему</h1>
+    <p>Аудиторный фонд университета</p>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <section class="editor">
+      <form method="post" action="{{ url_for('login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Логин<input name="username" autocomplete="username" maxlength="100" required></label>
+        <label>Пароль<input type="password" name="password" autocomplete="current-password" maxlength="128" required></label>
+        <button type="submit">Войти</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
