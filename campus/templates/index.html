@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Аудиторный фонд университета</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -11,6 +12,7 @@
   <header><span>УНИВЕРСИТЕТ / УЧЁТ ПОМЕЩЕНИЙ</span><p>Учебный проект · ЛР2</p></header>
   <main>
     <h1>Аудиторный фонд</h1>
+    <p>Вы вошли как {{ g.user["username"] }}. <button type="button" id="logout" class="secondary">Выйти</button></p>
     <p class="intro">Корпуса, подразделения и помещения университета в одном справочнике.</p>
     <nav aria-label="Справочники">
       <button type="button" data-resource="rooms" aria-pressed="true">Помещения</button>

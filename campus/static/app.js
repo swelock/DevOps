@@ -23,7 +23,12 @@ function message(text, error = false) {
   el("message").className = error ? "error" : "success";
 }
 async function api(path, options = {}) {
+  options.headers = {...options.headers, "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content};
   const response = await fetch(path, options);
+  if (response.status === 401) {
+    window.location.assign("/login");
+    throw new Error("Сессия завершена. Войдите снова.");
+  }
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || "Не удалось выполнить запрос.");
@@ -167,3 +172,10 @@ document.querySelectorAll("nav button").forEach(node => {
   };
 });
 load().catch(error => message(`Не удалось загрузить данные: ${error.message}. Обновите страницу.`, true));
+
+el("logout").onclick = async () => {
+  try {
+    await api("/api/auth/logout", {method: "POST"});
+    window.location.assign("/login");
+  } catch (error) { message(error.message, true); }
+};

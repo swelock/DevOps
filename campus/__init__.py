@@ -1,15 +1,21 @@
 """HTTP API и веб-интерфейс учёта аудиторного фонда."""
 
+import logging
 import math
 import os
+import secrets
+from datetime import timedelta
 from pathlib import Path
 
-from flask import Flask, g, jsonify, render_template, request
+import click
+from flask import Flask, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.exceptions import HTTPException
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from campus.database import DATABASE_ERRORS, INTEGRITY_ERRORS, connect, initialize_sqlite
 
 ROOT = Path(__file__).resolve().parent.parent
+DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32), method="pbkdf2:sha256")
 FIELDS = {
     "buildings": {"name": 100, "address": 250},
     "departments": {"name": 100},
@@ -80,9 +86,22 @@ def create_app(config=None):
         DATABASE_USER=os.environ.get("DATABASE_USER", ""),
         DATABASE_PASSWORD=os.environ.get("DATABASE_PASSWORD", ""),
         MAX_CONTENT_LENGTH=16 * 1024,
+        SECRET_KEY=os.environ.get("SECRET_KEY", ""),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_REFRESH_EACH_REQUEST=False,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
+        PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
     )
     if config:
         app.config.update(config)
+    if (
+        not app.config["SECRET_KEY"]
+        or len(app.config["SECRET_KEY"]) < 32
+        or app.config["SECRET_KEY"].startswith("<")
+    ):
+        raise ValueError("Задайте SECRET_KEY длиной не менее 32 символов в окружении или .env")
+    app.logger.setLevel(logging.INFO)
     if app.config["DATABASE_ENGINE"] == "sqlite":
         path = Path(app.config["DATABASE_PATH"])
         if not path.is_absolute():
@@ -98,6 +117,122 @@ def create_app(config=None):
 
     with app.app_context():
         initialize_sqlite(get_db(), Path(__file__).with_name("schema.sql"))
+
+    def csrf_token():
+        if "csrf_token" not in session:
+            session["csrf_token"] = secrets.token_urlsafe(32)
+        return session["csrf_token"]
+
+    app.jinja_env.globals["csrf_token"] = csrf_token
+
+    @app.cli.command("create-user")
+    @click.argument("username")
+    @click.password_option(confirmation_prompt=True)
+    def create_user(username, password):
+        """Создать пользователя; пароль вводится скрыто и не попадает в историю shell."""
+        username = username.strip()
+        if not 1 <= len(username) <= 100 or not 10 <= len(password) <= 128:
+            raise click.ClickException("Логин: 1–100 символов; пароль: 10–128 символов.")
+        db = get_db()
+        if db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone():
+            raise click.ClickException("Такой пользователь уже существует.")
+        with db.transaction():
+            db.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (username, generate_password_hash(password, method="pbkdf2:sha256")),
+            )
+        click.echo("Пользователь создан.")
+
+    @app.before_request
+    def protect_requests():
+        if request.endpoint is None or request.endpoint == "static":
+            return None
+        g.user = None
+        if session.get("user_id"):
+            g.user = (
+                get_db()
+                .execute("SELECT id, username FROM users WHERE id = ?", (session["user_id"],))
+                .fetchone()
+            )
+        if request.endpoint in ("index", "collection") and g.user is None:
+            if request.endpoint == "index":
+                return redirect(url_for("login"))
+            raise APIError("Сначала войдите в систему.", 401)
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            token = request.headers.get("X-CSRF-Token")
+            if request.endpoint == "login":
+                token = request.form.get("csrf_token")
+            expected = session.get("csrf_token")
+            if not token or not expected or not secrets.compare_digest(token, expected):
+                raise APIError("Неверный защитный токен. Обновите страницу.", 403)
+
+    def authenticate(username, password):
+        if not isinstance(username, str) or not isinstance(password, str):
+            raise APIError("Передайте логин и пароль строками.")
+        if not 1 <= len(username.strip()) <= 100 or not 1 <= len(password) <= 128:
+            raise APIError("Некорректная длина логина или пароля.")
+        user = (
+            get_db()
+            .execute("SELECT * FROM users WHERE username = ?", (username.strip(),))
+            .fetchone()
+        )
+        # Проверка фиктивного хеша сохраняет одинаковый путь для неизвестного логина.
+        password_hash = user["password_hash"] if user else app.config["DUMMY_PASSWORD_HASH"]
+        if not check_password_hash(password_hash, password) or user is None:
+            app.logger.warning("Login failed")
+            raise APIError("Неверный логин или пароль.", 401)
+        session.clear()
+        session["user_id"] = user["id"]
+        session.permanent = True
+        csrf_token()
+        app.logger.info("Login succeeded user_id=%s", user["id"])
+        return {"id": user["id"], "username": user["username"]}
+
+    app.config["DUMMY_PASSWORD_HASH"] = DUMMY_PASSWORD_HASH
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        error = None
+        if request.method == "POST":
+            try:
+                authenticate(request.form.get("username"), request.form.get("password"))
+            except APIError as exc:
+                error = exc.message
+                return render_template("login.html", error=error), exc.status
+            return redirect(url_for("index"))
+        return render_template("login.html", error=error)
+
+    @app.get("/api/auth/session")
+    def auth_session():
+        return jsonify(user=dict(g.user) if g.user else None, csrf_token=csrf_token())
+
+    @app.post("/api/auth/login")
+    def auth_login():
+        data = request.get_json()
+        if not isinstance(data, dict) or set(data) != {"username", "password"}:
+            raise APIError("Передайте username и password.")
+        user = authenticate(data["username"], data["password"])
+        return jsonify(user=user, csrf_token=csrf_token())
+
+    @app.post("/api/auth/logout")
+    def auth_logout():
+        app.logger.info("Logout user_id=%s", session.get("user_id"))
+        session.clear()
+        return "", 204
+
+    @app.after_request
+    def log_response(response):
+        app.logger.info("HTTP %s %s status=%s", request.method, request.path, response.status_code)
+        if request.endpoint in (
+            "index",
+            "login",
+            "auth_session",
+            "auth_login",
+            "auth_logout",
+            "collection",
+        ):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.errorhandler(APIError)
     def api_error(error):
@@ -117,6 +252,10 @@ def create_app(config=None):
         response.content_type = "application/json"
         return response
 
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify(error="Внутренняя ошибка сервера. Обратитесь к администратору."), 500
+
     def integrity_error(error):
         message = str(error).lower()
         if "unique" in message or "duplicate key" in message:
@@ -128,7 +267,7 @@ def create_app(config=None):
         return jsonify(error=text), 409
 
     def database_error(error):
-        app.logger.error("Database unavailable: %s", error)
+        app.logger.exception("Database unavailable")
         return jsonify(error="База данных недоступна. Повторите запрос позже."), 503
 
     for error_class in INTEGRITY_ERRORS:
@@ -142,7 +281,7 @@ def create_app(config=None):
 
     @app.get("/health")
     def health():
-        for table in FIELDS:
+        for table in (*FIELDS, "users"):
             get_db().execute(f"SELECT id FROM {table} LIMIT 1").fetchone()
         return jsonify(status="ok", database="ok")
 
