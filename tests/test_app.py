@@ -1,19 +1,10 @@
 import sqlite3
 
 import pytest
+from conftest import add_test_user, sign_in
 
 from campus import create_app
 from campus.database import Database
-
-
-@pytest.fixture
-def app(tmp_path):
-    return create_app({"TESTING": True, "DATABASE_PATH": str(tmp_path / "test.sqlite3")})
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
 
 
 @pytest.fixture
@@ -179,9 +170,11 @@ def test_sql_text_is_data(client):
 def test_persistence_and_environment(tmp_path, monkeypatch):
     path = tmp_path / "persistent.sqlite3"
     monkeypatch.setenv("DATABASE_PATH", str(path))
-    first = create_app().test_client()
+    first_app = create_app()
+    add_test_user(first_app)
+    first = sign_in(first_app.test_client())
     first.post("/api/departments", json={"name": "ИТ"})
-    second = create_app().test_client()
+    second = sign_in(create_app().test_client())
     assert second.get("/api/departments").json[0]["name"] == "ИТ"
 
 
