@@ -123,3 +123,44 @@ sudo deploy/scripts/verify-host.sh db
 - перед отключением парольного SSH проверяется вход по ключу;
 - скрипты рассчитаны на свежие учебные VM: существующие посторонние правила UFW
   они не удаляют, их отсутствие нужно проверить вручную..
+
+## Обновление существующего стенда: авторизация ЛР1
+
+Эта доработка подготовлена локально; на виртуальные машины автоматически не установлена.
+Перед обновлением сохраните резервную копию БД и действующей конфигурации.
+Новые таблицы добавляются без удаления корпусов, подразделений и помещений.
+
+На сервере БД примените обновлённый SQL-файл администратором (из каталога проекта):
+
+```bash
+sudo install -m 0644 deploy/postgresql/schema.sql /tmp/campus-auth-schema.sql
+sudo -u postgres psql --set=ON_ERROR_STOP=on --dbname=campus <<'SQL'
+SET ROLE campus_owner;
+\i /tmp/campus-auth-schema.sql
+RESET ROLE;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO campus_app;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO campus_app;
+SQL
+```
+
+На сервере приложения установите обновлённый код обычным способом из этого документа.
+В `/etc/campus/campus.env` добавьте `SECRET_KEY`: уникальную случайную строку минимум
+32 символа, например результат `python3 -c 'import secrets; print(secrets.token_hex(32))'`.
+Значение не публикуйте. Добавьте `SESSION_COOKIE_SECURE=false` для текущего HTTP-стенда.
+При HTTPS используйте true. Сохраните права root:campusapp 0640.
+Новый setup-app-server.sh создаёт ключ автоматически и сохраняет прежний при повторном запуске.
+
+Создайте пользователя скрытым вводом пароля. Команды выполняются администратором;
+конфигурация загружается в дочерний shell и не выводится:
+
+```bash
+sudo bash -c 'set -a; source /etc/campus/campus.env; set +a; cd /opt/campus/app; runuser -u campusapp --preserve-environment -- /opt/campus/venv/bin/flask --app campus create-user operator'
+sudo systemctl restart campus
+curl -i http://127.0.0.1:8000/health
+curl -i http://127.0.0.1:8000/api/rooms
+sudo journalctl -u campus -n 30 --no-pager
+```
+
+Ожидается 200 для health и 401 для API без входа. В браузере проверьте вход,
+CRUD прежних записей, выход и отказ при повторном обращении без входа.
+Пароль БД и пароль пользователя приложения — разные вещи.
