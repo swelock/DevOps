@@ -16,3 +16,5 @@ htmlcov/
 deploy/secrets/
 *.key
 *.pem
+reports/
+backups/

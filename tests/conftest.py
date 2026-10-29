@@ -102,9 +102,9 @@ def describe_case(item):
     params = item.callspec.params if hasattr(item, "callspec") else {}
     if "resource" in params:
         return RESOURCES.get(params["resource"], params["resource"])
-    if "field" in params:
-        return f"{FIELDS[params['field']]}: {describe_value(params['value'])}"
-    if "key" in params:
+    if "field" in params and "value" in params:
+        return f"{FIELDS.get(params['field'], params['field'])}: {describe_value(params['value'])}"
+    if "key" in params and params["key"] in FIELDS:
         return f"{FIELDS[params['key']]}: несуществующий ID 999"
     if "payload" in params:
         payload = params["payload"]
@@ -121,7 +121,7 @@ def describe_case(item):
         if not payload["name"].strip():
             return "Название состоит только из пробелов"
         return f"Название из {len(payload['name'])} символов (максимум 100)"
-    return "Основной сценарий"
+    return item.callspec.id if hasattr(item, "callspec") else "Основной сценарий"
 
 
 class ExplainedReport:
@@ -247,3 +247,10 @@ def app(tmp_path):
 def client(app):
     add_test_user(app)
     return sign_in(app.test_client())
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Пропущенный/xfail тест не считается успешной обязательной проверкой."""
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter and any(reporter.stats.get(key) for key in ("skipped", "xfailed", "xpassed")):
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED

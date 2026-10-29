@@ -8,3 +8,11 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
+
+[tool.coverage.run]
+branch = true
+source = ["campus"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
