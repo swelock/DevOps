@@ -9,7 +9,7 @@ const configs = {
   rooms: {title: "Помещения", singular: "помещение", fields: [
     ["building_id", "Корпус", "buildings"], ["department_id", "Подразделение", "departments"],
     ["number", "Номер", "text", 30], ["area", "Площадь, м²", "number", 100000],
-    ["height", "Высота, м", "number", 100]
+    ["height", "Высота, м", "number", 100], ["capacity", "Вместимость, мест", "number", 1000]
   ]}
 };
 let resource = "rooms";
@@ -70,8 +70,9 @@ function form(record = null) {
     } else {
       input.type = type;
       if (type === "number") {
-        input.min = "0.000001";
-        input.step = "any";
+        input.min = name === "capacity" ? "1" : "0.000001";
+        input.step = name === "capacity" ? "1" : "any";
+        if (name === "capacity") input.value = "1";
         input.max = limit;
       } else input.maxLength = limit;
     }

@@ -12,7 +12,7 @@ from flask import Flask, g, jsonify, redirect, render_template, request, session
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from campus.database import DATABASE_ERRORS, INTEGRITY_ERRORS, connect, initialize_sqlite
+from campus.database import DATABASE_ERRORS, INTEGRITY_ERRORS, connect
 
 ROOT = Path(__file__).resolve().parent.parent
 DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32), method="pbkdf2:sha256")
@@ -25,6 +25,7 @@ FIELDS = {
         "number": 30,
         "area": None,
         "height": None,
+        "capacity": None,
     },
 }
 
@@ -44,6 +45,9 @@ def get_db():
 
 
 def validate(resource, data):
+    # Старые клиенты не передавали вместимость; PUT по-прежнему заменяет всю запись.
+    if resource == "rooms" and isinstance(data, dict) and "capacity" not in data:
+        data = dict(data, capacity=1)
     if not isinstance(data, dict) or set(data) != set(FIELDS[resource]):
         raise APIError("Передайте JSON-объект ровно с полями: " + ", ".join(FIELDS[resource]))
     result = {}
@@ -53,6 +57,9 @@ def validate(resource, data):
             if not isinstance(value, str) or not 1 <= len(value.strip()) <= limit:
                 raise APIError(f"Поле {field}: строка длиной от 1 до {limit} символов.")
             value = value.strip()
+        elif field == "capacity":
+            if type(value) is not int or not 1 <= value <= 1000:
+                raise APIError("Поле capacity: целое число от 1 до 1000 мест.")
         elif field.endswith("_id"):
             if type(value) is not int or not 1 <= value <= 9223372036854775807:
                 raise APIError(f"Поле {field}: положительный целочисленный ID.")
@@ -115,8 +122,12 @@ def create_app(config=None):
         if db is not None:
             db.close()
 
-    with app.app_context():
-        initialize_sqlite(get_db(), Path(__file__).with_name("schema.sql"))
+    if app.config["DATABASE_ENGINE"] == "sqlite":
+        from campus.migrations import migrate
+
+        migrate(app.config)
+    elif app.config["DATABASE_ENGINE"] != "postgresql":
+        raise ValueError("DATABASE_ENGINE должен быть sqlite или postgresql")
 
     def csrf_token():
         if "csrf_token" not in session:
@@ -282,7 +293,8 @@ def create_app(config=None):
     @app.get("/health")
     def health():
         for table in (*FIELDS, "users"):
-            get_db().execute(f"SELECT id FROM {table} LIMIT 1").fetchone()
+            # Имена из FIELDS, значения параметризованы.
+            get_db().execute(f"SELECT id FROM {table} LIMIT 1").fetchone()  # nosec B608
         return jsonify(status="ok", database="ok")
 
     @app.route("/api/<resource>", methods=["GET", "POST"])
@@ -294,17 +306,20 @@ def create_app(config=None):
         if item_id is not None:
             if not 1 <= item_id <= 9223372036854775807:
                 raise APIError("Запись не найдена.", 404)
-            row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()
+            # Имена из FIELDS, значения параметризованы.
+            row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()  # nosec B608
             if row is None:
                 raise APIError("Запись не найдена.", 404)
         if request.method in ("GET", "HEAD"):
             if item_id is not None:
                 return jsonify(serialize(resource, row))
-            rows = db.execute(f"SELECT * FROM {resource} ORDER BY id").fetchall()
+            # Имена из FIELDS, значения параметризованы.
+            rows = db.execute(f"SELECT * FROM {resource} ORDER BY id").fetchall()  # nosec B608
             return jsonify([serialize(resource, row) for row in rows])
         if request.method == "DELETE":
             with db.transaction():
-                db.execute(f"DELETE FROM {resource} WHERE id = ?", (item_id,))
+                # Имена из FIELDS, значения параметризованы.
+                db.execute(f"DELETE FROM {resource} WHERE id = ?", (item_id,))  # nosec B608
             return "", 204
         values = validate(resource, request.get_json())
         # Имена таблиц и столбцов взяты из FIELDS, значения всегда параметризованы.
@@ -314,16 +329,20 @@ def create_app(config=None):
                 marks = ", ".join("?" for _ in values)
                 returning = " RETURNING id" if db.engine == "postgresql" else ""
                 cursor = db.execute(
-                    f"INSERT INTO {resource} ({fields}) VALUES ({marks}){returning}",
+                    # Имена из FIELDS, значения параметризованы.
+                    f"INSERT INTO {resource} ({fields}) VALUES ({marks}){returning}",  # nosec B608
                     tuple(values.values()),
                 )
                 item_id = cursor.fetchone()["id"] if returning else cursor.lastrowid
             else:
                 assignments = ", ".join(f"{field} = ?" for field in values)
                 db.execute(
-                    f"UPDATE {resource} SET {assignments} WHERE id = ?", (*values.values(), item_id)
+                    # Имена из FIELDS, значения параметризованы.
+                    f"UPDATE {resource} SET {assignments} WHERE id = ?",  # nosec B608
+                    (*values.values(), item_id),
                 )
-        row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()
+        # Имена из FIELDS, значения параметризованы.
+        row = db.execute(f"SELECT * FROM {resource} WHERE id = ?", (item_id,)).fetchone()  # nosec B608
         response = jsonify(serialize(resource, row))
         if request.method == "POST":
             response.status_code = 201

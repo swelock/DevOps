@@ -37,20 +37,22 @@ POST/PUT: `Content-Type: application/json`, все указанные поля �
 Помещение (`building_id` и `department_id` соответствуют существующим записям):
 
 ```json
-{"building_id":1,"department_id":1,"number":"101","area":40.5,"height":3.2}
+{"building_id":1,"department_id":1,"number":"101","area":40.5,"height":3.2,"capacity":40}
 ```
 
 Ответ помещения:
 
 ```json
-{"id":1,"building_id":1,"department_id":1,"number":"101","area":40.5,"height":3.2,"volume":129.6}
+{"id":1,"building_id":1,"department_id":1,"number":"101","area":40.5,"height":3.2,"capacity":40,"volume":129.6}
 ```
 
 Названия: 1–100 символов, адрес: 1–250, номер: 1–30, крайние пробелы удаляются.
 ID родителей — положительные JSON integers в диапазоне SQLite (до 2^63−1).
 Числовые строки и boolean не принимаются за числа.
 Площадь (м²): 0 < area ≤ 100000; высота (м): 0 < height ≤ 100;
-NaN и Infinity недопустимы. Объём вычисляется, передавать его нельзя.
+NaN и Infinity недопустимы. Вместимость `capacity` — целое 1–1000.
+Для совместимости старый запрос без `capacity` получает 1; при PUT отсутствие
+поля также заменяет вместимость на 1, остальные поля обязательны. Объём вычисляется, передавать его нельзя.
 
 ## Ошибки
 
