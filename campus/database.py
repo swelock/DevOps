@@ -2,7 +2,6 @@
 
 import sqlite3
 from contextlib import contextmanager
-from pathlib import Path
 
 try:
     import psycopg
@@ -67,13 +66,6 @@ def connect(config):
         row_factory=dict_row,
     )
     return Database(connection, engine)
-
-
-def initialize_sqlite(database, schema_path):
-    """PostgreSQL-схему создаёт администратор отдельным deploy-скриптом."""
-
-    if database.engine == "sqlite":
-        database.connection.executescript(Path(schema_path).read_text())
 
 
 INTEGRITY_ERRORS = [sqlite3.IntegrityError]

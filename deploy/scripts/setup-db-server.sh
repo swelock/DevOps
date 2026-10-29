@@ -81,6 +81,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE campus_owner IN SCHEMA public
   GRANT USAGE ON SEQUENCES TO campus_app;
 SQL
 
+bash "${SCRIPT_DIR}/migrate-db-server.sh"
+
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow from "${ADMIN_CIDR}" to any port 22 proto tcp comment 'SSH administration'
